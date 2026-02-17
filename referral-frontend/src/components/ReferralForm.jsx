@@ -1,106 +1,108 @@
 import { useState } from "react";
-import api from "../api";
+import api from "../utils/api";
 
-function ReferralForm({ refresh }) {
+function ReferralForm({ onCreated }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     jobTitle: "",
   });
+  const [resume, setResume] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [file, setFile] = useState(null);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-
-    Object.keys(form).forEach((key) => {
-      formData.append(key, form[key]);
-    });
-
-    if (file) {
-      formData.append("resume", file);
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      await api.post("/candidates", formData, {
+      const payload = new FormData();
+      payload.append("name", form.name);
+      payload.append("email", form.email);
+      payload.append("phone", form.phone);
+      payload.append("jobTitle", form.jobTitle);
+
+      if (resume) {
+        payload.append("resume", resume);
+      }
+
+      // FormData + axios syntax from axios docs.
+      const response = await api.post("/referrals", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setForm({
-        name: "",
-        email: "",
-        phone: "",
-        jobTitle: "",
-      });
-      setFile(null);
-      refresh();
-      alert("Candidate added!");
-    } catch (error) {
-      console.error("Failed to add candidate", error);
-      alert("Could not add candidate. Check backend/API.");
+      setForm({ name: "", email: "", phone: "", jobTitle: "" });
+      setResume(null);
+      onCreated(response.data);
+    } catch (requestError) {
+      setError(requestError?.response?.data?.message || "Failed to submit referral");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded shadow max-w-xl mx-auto"
-    >
-      <h2 className="text-xl font-bold mb-4">Refer Candidate</h2>
+    <form onSubmit={handleSubmit} className="mb-6 rounded bg-white p-5 shadow">
+      <h2 className="mb-4 text-xl font-semibold">Referral Form</h2>
 
-      <input
-        name="name"
-        placeholder="Name"
-        className="w-full border p-2 mb-2"
-        value={form.name}
-        onChange={handleChange}
-        required
-      />
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      <input
-        name="email"
-        type="email"
-        placeholder="Email"
-        className="w-full border p-2 mb-2"
-        value={form.email}
-        onChange={handleChange}
-        required
-      />
-
-      <input
-        name="phone"
-        placeholder="Phone"
-        className="w-full border p-2 mb-2"
-        value={form.phone}
-        onChange={handleChange}
-        required
-      />
-
-      <input
-        name="jobTitle"
-        placeholder="Job Title"
-        className="w-full border p-2 mb-2"
-        value={form.jobTitle}
-        onChange={handleChange}
-        required
-      />
+      <div className="grid gap-3 md:grid-cols-2">
+        <input
+          name="name"
+          placeholder="Candidate name"
+          className="rounded border p-2"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="email"
+          type="email"
+          placeholder="Candidate email"
+          className="rounded border p-2"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="phone"
+          placeholder="Phone"
+          className="rounded border p-2"
+          value={form.phone}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="jobTitle"
+          placeholder="Job title"
+          className="rounded border p-2"
+          value={form.jobTitle}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
       <input
         type="file"
-        accept=".pdf"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        className="mb-2"
+        accept="application/pdf"
+        onChange={(event) => setResume(event.target.files?.[0] || null)}
+        className="mt-3"
       />
 
-      <button className="w-full bg-blue-600 text-white py-2 rounded">
-        Submit
+      <button
+        type="submit"
+        disabled={loading}
+        className="mt-4 rounded bg-indigo-600 px-4 py-2 text-white"
+      >
+        {loading ? "Submitting..." : "Submit Referral"}
       </button>
     </form>
   );

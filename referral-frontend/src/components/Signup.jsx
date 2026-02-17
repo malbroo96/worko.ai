@@ -1,8 +1,8 @@
 import { useState } from "react";
 import api, { setToken } from "../utils/api";
 
-function Login({ onAuthSuccess, onSwitchToSignup }) {
-  const [form, setForm] = useState({ email: "", password: "" });
+function Signup({ onAuthSuccess, onSwitchToLogin }) {
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,11 +17,11 @@ function Login({ onAuthSuccess, onSwitchToSignup }) {
     setError("");
 
     try {
-      const response = await api.post("/auth/login", form);
+      const response = await api.post("/auth/signup", form);
       setToken(response.data.token);
       onAuthSuccess(response.data.user);
     } catch (requestError) {
-      setError(requestError?.response?.data?.message || "Login failed");
+      setError(requestError?.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -33,9 +33,19 @@ function Login({ onAuthSuccess, onSwitchToSignup }) {
         onSubmit={handleSubmit}
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
       >
-        <h1 className="mb-4 text-2xl font-bold">Login</h1>
+        <h1 className="mb-4 text-2xl font-bold">Candidate Signup</h1>
 
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
+        <input
+          name="name"
+          type="text"
+          placeholder="Full name"
+          className="mb-3 w-full rounded border p-2"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
 
         <input
           name="email"
@@ -60,21 +70,21 @@ function Login({ onAuthSuccess, onSwitchToSignup }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded bg-blue-600 py-2 text-white"
+          className="w-full rounded bg-green-600 py-2 text-white"
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Creating account..." : "Sign up"}
         </button>
 
         <button
           type="button"
-          onClick={onSwitchToSignup}
+          onClick={onSwitchToLogin}
           className="mt-3 w-full text-sm text-blue-700 underline"
         >
-          New candidate? Sign up
+          Already have an account? Login
         </button>
       </form>
     </div>
   );
 }
 
-export default Login;
+export default Signup;
