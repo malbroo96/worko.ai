@@ -2,6 +2,15 @@
 
 Full-stack referral management platform with role-based JWT authentication.
 
+## Default Admin Login
+
+For quick testing, use:
+
+```env
+ADMIN_EMAIL=admin@worko.ai
+ADMIN_PASSWORD=Admin@123
+```
+
 ## Stack
 
 - Backend: Node.js, Express, MongoDB, Mongoose
@@ -124,6 +133,7 @@ Frontend runs at `http://localhost:5173`.
   - update referral status
 
 Admin user is auto-seeded at backend startup if `ADMIN_EMAIL` and `ADMIN_PASSWORD` are present.
+Default values used in this project are `admin@worko.ai` and `Admin@123`.
 
 ## API Endpoints
 
