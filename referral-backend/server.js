@@ -10,7 +10,49 @@ const User = require("./models/User");
 
 const app = express();
 
-app.use(cors());
+const normalizeOrigin = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+};
+
+const configuredOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((entry) => normalizeOrigin(entry))
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(
+  new Set([
+    ...configuredOrigins,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ])
+);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
+  })
+);
+
 app.use(express.json());
 
 app.get("/health", (req, res) => {
@@ -23,6 +65,10 @@ app.use("/api/referrals", referralRoutes);
 app.use((err, req, res, next) => {
   if (err && err.message === "Only PDF files are allowed") {
     return res.status(400).json({ message: err.message });
+  }
+
+  if (err && err.message === "Not allowed by CORS") {
+    return res.status(403).json({ message: err.message });
   }
 
   return res.status(500).json({ message: err.message || "Internal server error" });
@@ -59,6 +105,7 @@ connectDB()
     await ensureAdminUser();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log("Allowed CORS origins:", allowedOrigins.join(", "));
     });
   })
   .catch((error) => {
